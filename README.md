@@ -4,21 +4,31 @@ Motivation
 In C++ we sometimes run into the following problem:
 
 We have
-- a set of types `As = { A1, A2, A3, ... }`
-- a set of types `Bs = { B1, B2, B3, ... }`
+- a set of types `As = { A1, A2, A3, ... An }`
+- a set of types `Bs = { B1, B2, B3, ... Bm }`
 - and a set of functions `Fs = { A1 -> B1, A1 -> B2, ... , A2 -> B1, A2 -> B2, ... }`
 
 And in problem we are trying to solve, it would be very convenient if we could write the following code:
 
 ```c++
+
+struct Fs {
+    void call(A1 a, B1 b) { ... };
+    void call(A1 a, B2 b) { ... };
+    void call(A1 a, B3 b) { ... };
+    void call(A1 a, Bm b) { ... };
+    ...
+    void call(An a, Bm b) { ... };
+};
+
 std::vector<As> my_as = { ... };
 std::vector<Bs> my_bs = { ... };
 
-for ( auto& a : my_as) {
-    for ( auto& b : my_bs) {
-    	// some contraption that calls the correct function from Fs
-	// depending on the combination of a and b
-    	Fs.call(a, b);
+for (auto& a : my_as) {
+    for (auto& b : my_bs) {
+        // some contraption that calls the correct function from Fs
+        // depending on the combination of a and b
+        Fs.call(a, b);
     }
 }
 ```
@@ -29,10 +39,10 @@ Unfortunately, `As` and `Bs` are a union of types, which are not easily represen
 std::vector<std::shared_ptr<ABase>> my_as = { ... };
 std::vector<std::shared_ptr<BBase>> my_bs = { ... };
 
-for ( auto& a : my_as) {
-    for ( auto& b : my_bs) {
+for (auto& a : my_as) {
+    for (auto& b : my_bs) {
         // some contraption that calls the correct function from Fs
-    // depending on the combination of a and b
+        // depending on the combination of a and b
         Fs.call(*a, *b);
     }
 }
@@ -45,51 +55,59 @@ std::vector<std::shared_ptr<BBase>> my_bs = { ... };
 
 for ( auto& a : my_as) {
     for ( auto& b : my_bs) {
-    // some contraption that calls the correct function from Fs
-    // depending on the combination of a and b
-    if (A1* a1 = dynamic_cast<A1*>(a.get())) {
-       if (B1* b1 = dynamic_cast<B1*>(b.get())) {
-          Fs.call(*a1, *b1);
-       }
-       else if ( ... ) {
-          Fs.call(*a1, *bi);
-       }
-       ...
-       else if (Bn* bn = dynamic_cast<Bn*>(b.get())) {
-          Fs.call(*a1, *bn);
-       }
-       else {
-          // someone added a new B without handling it
-          throw;
-       }
-    }
-    else if (A2* a2 = dynamic_cast<A2*>(a.get())) {
-       if (B1* b1 = dynamic_cast<B1*>(b.get())) {
-          Fs.call(*a2, *b1);
-       }
-       ...
-       else {
-          // someone added a new B without handling it
-          throw;
-       }
-    }
-    ...
-    else if (An* an = dynamic_cast<An*>(a.get())) {
-        if (B1* b1 = ...) {
-	   ...
-	}
-    }
-    ...
-    else {
-        // someone added a new As without handling it
-	throw;
-    }
+        if (A1* a1 = dynamic_cast<A1*>(a.get())) {
+            if (B1* b1 = dynamic_cast<B1*>(b.get())) {
+                Fs.call(*a1, *b1);
+            }
+            else if ( ... ) {
+                Fs.call(*a1, *bi);
+            }
+            ...
+            else if (Bn* bn = dynamic_cast<Bn*>(b.get())) {
+                Fs.call(*a1, *bn);
+            }
+            else {
+                // someone added a new B without handling it
+                throw;
+            }
+        }
+        else if (A2* a2 = dynamic_cast<A2*>(a.get())) {
+            if (B1* b1 = dynamic_cast<B1*>(b.get())) {
+                Fs.call(*a2, *b1);
+            }
+            ...
+            else {
+               // someone added a new B without handling it
+               throw;
+            }
+        }
+        ...
+        else if (An* an = dynamic_cast<An*>(a.get())) {
+            if (B1* b1 = ...) {
+    	    ...
+    	}
+        ...
+        else {
+            // someone added a new As without handling it
+    	    throw;
+        }
 }
 ```
 
 This is insanity. One possible solution is the usage of the classic [link](https://en.wikipedia.org/wiki/Double_dispatch#Double_dispatch_in_C++ "visitor pattern") using inheritance.
 
-This repository tries to implement a different approach. Using template meta-programming hackery, we can construct a templated type `variant_ptr<As...>` which can be instantiated with a list of member types. For example, `variant_ptr<std::string, int, double>` can be thought of as a pointer that points to `std::string`, `int`, or `double`. This new type is coupled with a function `apply_visitor(visitor, variant_ptr_a, variant_ptr_b, ...)` which calls `visitor.visit(A a, B b, ...)` where `A` and `B` are the underlying "child types" inside the `variant_ptr_a` and `variant_ptr_b`. 
+This repository tries to implement a different approach. Using template meta-programming hackery, we can construct a templated type `variant_ptr<As...>` which can be instantiated with a list of member types. For example, `variant_ptr<std::string, int, double>` can be thought of as a pointer that points to `std::string`, `int`, or `double`. This new type is coupled with a function `apply_visitor(visitor, variant_ptr_a, variant_ptr_b, ...)` which calls `visitor.visit(A a, B b, ...)` where `A` and `B` are the underlying "child types" inside the `variant_ptr_a` and `variant_ptr_b`. Then we can write the following code:
+
+```c++
+std::vector<variant_ptr<A1, A2, ..., An>> my_as = { ... };
+std::vector<variant_ptr<B1, B2, ..., Bm> my_bs = { ... };
+
+for (auto& a : my_as) {
+    for (auto& b : my_bs) {
+        apply_visitor(Fs, a, b);
+    }
+}
+```
 
 Example usage
 -------------
