@@ -96,7 +96,11 @@ for (auto& a : my_as) {
 
 This is insanity. One possible solution is the usage of the classic [visitor pattern](https://en.wikipedia.org/wiki/Double_dispatch#Double_dispatch_in_C++ "visitor pattern") using inheritance.
 
-This repository tries to implement a different approach. Using template meta-programming hackery, we can construct a templated type `variant_ptr<As...>` coupled with a function `apply_visitor(visitor, variant_ptr_a, variant_ptr_b, variant_c, ...)` which calls `visitor.visit(A a, B b, C c, ...)` where `A`, `B`, 'C', etc, are the underlying "child types" inside the `variant_ptr_a`, `variant_ptr_b`, `variant_ptr_c`, etc. Then we can write the following code:
+This repository tries to implement a different approach using template meta-programming hackery.
+
+Solution
+--------
+we can construct a templated type `variant_ptr<As...>` coupled with a function `apply_visitor(visitor, variant_ptr_a, variant_ptr_b, variant_c, ...)` which calls `visitor.visit(A a, B b, C c, ...)` where `A`, `B`, `C`, etc, are the underlying "child types" inside the `variant_ptr_a`, `variant_ptr_b`, `variant_ptr_c`, etc. Then we can write the following code:
 
 ```c++
 std::vector<variant_ptr<A1, A2, ..., An>> my_as = { ... };
@@ -109,7 +113,7 @@ for (auto& a : my_as) {
 }
 ```
 
-Example usage
+Full example (main.cpp)
 -------------
 
 ```c++
@@ -206,8 +210,8 @@ int main(int argc, char *argv[])
 }
 ```
 
-Output
-------
+Output:
+
 ```
 Round 0-----------
         Alice throws Paper, a very elusive move.
