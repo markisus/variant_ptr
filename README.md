@@ -53,8 +53,8 @@ But this only solves half the problem. The `std::vector` has no type information
 std::vector<std::shared_ptr<ABase>> my_as = { ... };
 std::vector<std::shared_ptr<BBase>> my_bs = { ... };
 
-for ( auto& a : my_as) {
-    for ( auto& b : my_bs) {
+for (auto& a : my_as) {
+    for (auto& b : my_bs) {
         if (A1* a1 = dynamic_cast<A1*>(a.get())) {
             if (B1* b1 = dynamic_cast<B1*>(b.get())) {
                 Fs.call(*a1, *b1);
@@ -94,9 +94,9 @@ for ( auto& a : my_as) {
 }
 ```
 
-This is insanity. One possible solution is the usage of the classic [link](https://en.wikipedia.org/wiki/Double_dispatch#Double_dispatch_in_C++ "visitor pattern") using inheritance.
+This is insanity. One possible solution is the usage of the classic [visitor pattern](https://en.wikipedia.org/wiki/Double_dispatch#Double_dispatch_in_C++ "visitor pattern") using inheritance.
 
-This repository tries to implement a different approach. Using template meta-programming hackery, we can construct a templated type `variant_ptr<As...>` which can be instantiated with a list of member types. For example, `variant_ptr<std::string, int, double>` can be thought of as a pointer that points to `std::string`, `int`, or `double`. This new type is coupled with a function `apply_visitor(visitor, variant_ptr_a, variant_ptr_b, ...)` which calls `visitor.visit(A a, B b, ...)` where `A` and `B` are the underlying "child types" inside the `variant_ptr_a` and `variant_ptr_b`. Then we can write the following code:
+This repository tries to implement a different approach. Using template meta-programming hackery, we can construct a templated type `variant_ptr<As...>` coupled with a function `apply_visitor(visitor, variant_ptr_a, variant_ptr_b, variant_c, ...)` which calls `visitor.visit(A a, B b, C c, ...)` where `A`, `B`, 'C', etc, are the underlying "child types" inside the `variant_ptr_a`, `variant_ptr_b`, `variant_ptr_c`, etc. Then we can write the following code:
 
 ```c++
 std::vector<variant_ptr<A1, A2, ..., An>> my_as = { ... };
