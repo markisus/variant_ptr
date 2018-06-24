@@ -97,6 +97,7 @@ for (auto& a : my_as) {
             // someone added a new A without handling it
     	    throw;
         }
+    }
 }
 ```
 
