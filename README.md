@@ -84,17 +84,23 @@ for (auto& a : my_as) {
         ...
         else if (An* an = dynamic_cast<An*>(a.get())) {
             if (B1* b1 = ...) {
-    	    ...
+    	        ...
+            }
+            ...
+            else {
+               // someone added a new B without handling it
+               throw;
+            }
     	}
         ...
         else {
-            // someone added a new As without handling it
+            // someone added a new A without handling it
     	    throw;
         }
 }
 ```
 
-This is insanity. One possible solution is the usage of the classic [visitor pattern](https://en.wikipedia.org/wiki/Double_dispatch#Double_dispatch_in_C++ "visitor pattern") using inheritance.
+This is **insanity**. One possible solution is the usage of the classic [visitor pattern](https://en.wikipedia.org/wiki/Double_dispatch#Double_dispatch_in_C++ "visitor pattern") using inheritance.
 
 This repository tries to implement a different approach using template meta-programming hackery.
 
