@@ -8,7 +8,7 @@ We have
 - a set of types `Bs = { B1, B2, B3, ... Bm }`
 - and a set of functions `Fs = { A1 -> B1, A1 -> B2, ... , A2 -> B1, A2 -> B2, ... }`
 
-And in problem we are trying to solve, it would be very convenient if we could write the following code:
+And in the problem we are trying to solve, it would be very convenient if we could write the following code:
 
 ```c++
 
