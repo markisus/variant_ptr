@@ -100,7 +100,9 @@ This repository tries to implement a different approach using template meta-prog
 
 Solution
 --------
-we can construct a templated type `variant_ptr<As...>` coupled with a function `apply_visitor(visitor, variant_ptr_a, variant_ptr_b, variant_c, ...)` which calls `visitor.visit(A a, B b, C c, ...)` where `A`, `B`, `C`, etc, are the underlying "child types" inside the `variant_ptr_a`, `variant_ptr_b`, `variant_ptr_c`, etc. Then we can write the following code:
+We can construct a templated type `variant_ptr<As...>` coupled with a function `apply_visitor(visitor, variant_ptr_a, variant_ptr_b, variant_c, ...)` which calls `visitor.visit(A a, B b, C c, ...)` where `A`, `B`, `C`, etc, are the underlying "child types" inside the `variant_ptr_a`, `variant_ptr_b`, `variant_ptr_c`, etc.
+
+This allows the following code:
 
 ```c++
 std::vector<variant_ptr<A1, A2, ..., An>> my_as = { ... };
