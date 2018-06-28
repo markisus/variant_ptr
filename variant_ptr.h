@@ -8,22 +8,6 @@
 namespace lius_tools {
 
 namespace {
-template <bool B>
-using bool_constant = std::integral_constant<bool, B>;
-
-template <typename X, typename... Ts>
-struct contains;
-
-template <typename X>
-struct contains<X> : public bool_constant<false> {};
-
-template <typename X, typename... Ts>
-struct contains<X, X, Ts...> : public bool_constant<true> {};
-
-template <typename X, typename T, typename... Ts>
-struct contains<X, T, Ts...> : public contains<X, Ts...> {};
-
-
 template <typename X, typename... Ts>
 struct index_of_type {
   // fallback
@@ -44,19 +28,6 @@ template <typename... Us>
 struct TypeList {};
 
 template <typename... Ts>
-struct length_of;
-
-template <>
-struct length_of<> {
-  static constexpr size_t value = 0;
-};
-
-template <typename T, typename... Ts>
-struct length_of<T, Ts...> {
-  static constexpr size_t value = length_of<Ts...>::value + 1;
-};
-
-template <typename... Ts>
 struct head;
 
 template <typename T, typename... Ts>
@@ -64,19 +35,6 @@ struct head<T, Ts...> {
   using type = T;
 };
 
-template <typename T, typename U>
-struct list_concat;
-
-template <typename... Ts, typename... Us>
-struct list_concat<TypeList<Ts...>, TypeList<Us...>> :
-      public TypeList<Ts..., Us...> {};
-
-template <typename T, typename U>
-struct list_product;
-
-template <typename... Ts, typename... Us>
-struct list_product<TypeList<Ts...>, TypeList<Us...>> :
-      public TypeList<std::pair<Ts,Us>...> {};
 }
 
 template <typename... Ts>
@@ -113,7 +71,7 @@ class variant_ptr {
   template <typename X, typename U, typename... Us>
   bool has_type_impl(TypeList<U, Us...>) const {
     bool u_is_correct_type =
-        type_index_ == (length_of<Ts...>::value - length_of<U, Us...>::value);
+        type_index_ == (sizeof...(Ts) - (1+sizeof...(Us)));
     if (u_is_correct_type) {
       return std::is_same<X, U>::value;
     }
@@ -140,7 +98,7 @@ class variant_ptr {
             typename U, typename... Us, typename... TExtras>
   auto visit_impl(
       TVisitor&& visitor, TypeList<U, Us...>, TExtras&&... extras) const {
-    if (type_index_ == (length_of<Ts...>::value - length_of<U, Us...>::value)) {
+    if (type_index_ == (sizeof...(Ts) - (1 + sizeof...(Us)))) {
       return cast_and_visit<U>(visitor, extras...);
     }
     else {
@@ -213,34 +171,48 @@ class BindVisitor {
 //
 // which will call the wrapped MultiVisitor's visit function
 // with the underlying types of the variants.
-template <typename TMultiVisitor>
+template <typename TMultiVisitor, size_t num_variants>
 class MultiVisitorToSingleVisitor {
  public:
   MultiVisitorToSingleVisitor(TMultiVisitor& multi_visitor) :
       multi_visitor_(multi_visitor) {}
-  template <typename A>
-  auto visit(A&& a) {
-    return multi_visitor_.visit(a);
-  }
 
-  template <typename A, typename TVariant, typename... TVariants>
-  auto visit(A&& a, TVariant&& variant, TVariants&&... variants) {
+  using _ = typename std::enable_if<(num_variants >= 2)>::type;
+
+  template <typename A, typename TVariant, typename... TExtras>
+  auto visit(A&& a, TVariant&& variant, TExtras&&... extras) {
     // What have I done
     BindVisitor<TMultiVisitor, A> bind_visitor { multi_visitor_, a };
-    MultiVisitorToSingleVisitor<BindVisitor<TMultiVisitor, A>>
+    MultiVisitorToSingleVisitor<BindVisitor<TMultiVisitor, A>, num_variants-1>
         bind_single_visitor { bind_visitor };
-    return variant.visit(bind_single_visitor, variants...);
+    return variant.visit(bind_single_visitor, extras...);
   }
 
  private:
   TMultiVisitor& multi_visitor_;
 };
 
-template <typename TVisitor, typename TVariant, typename... TVariants>
-auto apply_visitor(
-    TVisitor visitor, TVariant&& variant, TVariants&&... variants) {
-  MultiVisitorToSingleVisitor<TVisitor> single_visitor { visitor };
-  return variant.visit(single_visitor, variants...);
+// Specialization of the above, when there is only one variant
+// inside the MultiVisitor
+template <typename TMultiVisitor>
+class MultiVisitorToSingleVisitor<TMultiVisitor, 1> {
+ public:
+  MultiVisitorToSingleVisitor(TMultiVisitor& multi_visitor) :
+      multi_visitor_(multi_visitor) {}
+  template <typename A, typename... TExtras>
+  auto visit(A&& a, TExtras&&... extras) {
+    return multi_visitor_.visit(a, extras...);
+  }
+
+ private:
+  TMultiVisitor& multi_visitor_;
+};
+
+template <size_t num_variants, typename TVisitor, typename TVariant, typename... TExtras>
+auto apply_multi_visitor(
+    TVisitor&& visitor, TVariant&& variant, TExtras&&... extras) {
+  MultiVisitorToSingleVisitor<TVisitor, num_variants> single_visitor { visitor };
+  return variant.visit(single_visitor, extras...);
 }
 
 }

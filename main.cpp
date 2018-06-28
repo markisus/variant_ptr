@@ -67,13 +67,13 @@ int main(int argc, char *argv[])
     std::cout << "\tBob throws " << bobs_hand.visit(get_description) << std::endl;
 
     bool alice_loses_to_bob =
-        apply_visitor(loses_to,
-                      alices_hand,
-                      bobs_hand);
+        apply_multi_visitor<2>(loses_to,
+                               alices_hand,
+                               bobs_hand);
     bool bob_loses_to_alice =
-        apply_visitor(loses_to,
-                      bobs_hand,
-                      alices_hand);
+        apply_multi_visitor<2>(loses_to,
+                               bobs_hand,
+                               alices_hand);
 
     if (alice_loses_to_bob) {
       std::cout << "\tAlice loses to Bob" << std::endl;
